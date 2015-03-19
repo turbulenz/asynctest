@@ -80,6 +80,12 @@ Test::Tick()
     return false;
 }
 
+size_t
+Test::GetNumTestsRun()
+{
+    return s_currentIdx;
+}
+
 bool
 Test::ShowResults()
 {

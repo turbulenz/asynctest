@@ -15,6 +15,8 @@ public:
     /// have been run.
     static bool Tick();
 
+    static size_t GetNumTestsRun();
+
     /// When all tests have completed, this returns a summary of the
     /// results and a global pass/fail flag (true means all tests
     /// passed).
@@ -40,9 +42,18 @@ protected:
 
 };
 
-#define TEST_REGISTER( _entry, _name )                                  \
-    static bool _entry##_reg_result =                                   \
+#if !defined(_WIN32)
+# define TEST_REGISTER( _entry, _name )                                 \
+    __attribute__ ((constructor))                                       \
+    static void _reg_##_entry()                                         \
+    {                                                                   \
+        asynctest::Test::Register( _entry, _name );                     \
+    }
+#else
+# define TEST_REGISTER( _entry, _name )                                 \
+    extern bool _entry##_reg_result =                                   \
         asynctest::Test::Register( _entry, _name )
+#endif
 
 #define TEST_AreSame( _expect, _actual, _message, ... )                 \
     {                                                                   \
