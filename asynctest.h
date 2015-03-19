@@ -27,7 +27,7 @@ public:
     static void Wait();
 
     /// Resume a test.  Must correspond to a previous call to Wait.
-    static void Resume(const std::function<void()> &fn);
+    static void Resume(const std::function<void()> &fn = nullptr);
 
     /// Registers a test.  In general, this should be called via the
     /// ASYNCTEST_REGISTER macro.
