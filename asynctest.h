@@ -46,8 +46,24 @@ bool Register(ITest *(*initFn)(), const char *name);
 /// Marks the current test as having failed.
 void Fail(const char *file, int line, const char *message, ...);
 
-#if !defined(_WIN32)
-# define TEST_REGISTER( _cls_, _name_ )                                 \
+#if defined(_WIN32)
+# define TEST_DECLARE( _cls_, _name_ )                                  \
+    __declspec(dllexport) extern "C" bool _reg_##_cls_(void);           \
+    extern "C" bool _reg_##_cls_(void)                                  \
+    {                                                                   \
+        typedef asynctest::ITest* (*InitFn_t)();                        \
+        InitFn_t initFn = static_cast<InitFn_t>                         \
+            ([]() -> asynctest::ITest * {                               \
+                return new _cls_();                                     \
+            });                                                         \
+        asynctest::Register(initFn, _name_);                            \
+        return true;                                                    \
+    }
+# define TEST_REGISTER( _cls_ )                 \
+    extern "C" bool _reg_##_cls_();             \
+    bool _r_##_cls_ = _reg_##_cls_()
+#else
+# define TEST_DECLARE( _cls_, _name_ )                                  \
     __attribute__ ((constructor))                                       \
     static void _reg_##_cls_()                                          \
     {                                                                   \
@@ -58,10 +74,7 @@ void Fail(const char *file, int line, const char *message, ...);
             });                                                         \
         asynctest::Register(initFn, _name_ );                           \
     }
-#else
-# define TEST_REGISTER( _entry, _name )                                 \
-    extern bool _entry##_reg_result =                                   \
-        asynctest::Test::Register( _entry, _name )
+# define TEST_REGISTER( _cls_ )
 #endif
 
 #define TEST_AreSame( _expect, _actual, _message, ... )                 \

@@ -3,6 +3,7 @@
 
 #include <assert.h>
 #include <setjmp.h>
+#include <stdarg.h>
 #include <vector>
 
 namespace asynctest
