@@ -5,49 +5,58 @@
 namespace asynctest
 {
 
-class Test
+/// Class representing a single test.  Use this when there is startup
+/// or shutdown code.
+class ITest
 {
 public:
+    virtual ~ITest();
+    virtual void Startup();
+    virtual void Shutdown();
+    virtual void Test() = 0;
 
-    typedef void (*EntryPoint)();
-
-    /// Keep calling this per-frame.  When it returns true, all tests
-    /// have been run.
-    static bool Tick();
-
-    static size_t GetNumTestsRun();
-
-    /// When all tests have completed, this returns a summary of the
-    /// results and a global pass/fail flag (true means all tests
-    /// passed).
-    static bool ShowResults();
-
-    /// Called from within tests to signify that a test will not
-    /// complete until a later tick
-    static void Wait();
-
-    /// Resume a test.  Must correspond to a previous call to Wait.
-    static void Resume(const std::function<void()> &fn = nullptr);
-
-    /// Registers a test.  In general, this should be called via the
-    /// ASYNCTEST_REGISTER macro.
-    static bool Register(EntryPoint fn, const char *name);
-
-    /// Marks the current test as having failed.
-    static void Fail(const char *file, int line, const char *message, ...);
-
-protected:
-
-    static Test *GetInstance();
-
+    void Wait();
+    void Resume(const std::function<void()> &fn = nullptr);
 };
 
+typedef void (*EntryPoint)();
+
+/// Keep calling this per-frame.  When it returns true, all tests
+/// have been run.
+bool Tick();
+
+size_t GetNumTestsRun();
+
+/// When all tests have completed, this returns a summary of the
+/// results and a global pass/fail flag (true means all tests
+/// passed).
+bool ShowResults();
+
+/// Called from within tests to signify that a test will not
+/// complete until a later tick
+void Wait();
+
+/// Resume a test.  Must correspond to a previous call to Wait.
+void Resume(const std::function<void()> &fn = nullptr);
+
+/// Registers a test class.  In general, this should be called via the
+/// ASYNCTEST_REGISTER macro.
+bool Register(ITest *(*initFn)(), const char *name);
+
+/// Marks the current test as having failed.
+void Fail(const char *file, int line, const char *message, ...);
+
 #if !defined(_WIN32)
-# define TEST_REGISTER( _entry, _name )                                 \
+# define TEST_REGISTER( _cls_, _name_ )                                 \
     __attribute__ ((constructor))                                       \
-    static void _reg_##_entry()                                         \
+    static void _reg_##_cls_()                                          \
     {                                                                   \
-        asynctest::Test::Register( _entry, _name );                     \
+        typedef asynctest::ITest* (*InitFn_t)();                        \
+        InitFn_t initFn = static_cast<InitFn_t>                         \
+            ([]() -> asynctest::ITest * {                               \
+                return new _cls_ ();                                    \
+            });                                                         \
+        asynctest::Register(initFn, _name_ );                           \
     }
 #else
 # define TEST_REGISTER( _entry, _name )                                 \
@@ -59,7 +68,7 @@ protected:
     {                                                                   \
         if ((_expect) != (_actual))                                     \
         {                                                               \
-            asynctest::Test::Fail(__FILE__, __LINE__, _message, ##__VA_ARGS__); \
+            asynctest::Fail(__FILE__, __LINE__, _message, ##__VA_ARGS__); \
         }                                                               \
     }
 
@@ -69,7 +78,7 @@ protected:
     {                                                                   \
         if (!(_cond))                                                   \
         {                                                               \
-            asynctest::Test::Fail(__FILE__, __LINE__, _message, ##__VA_ARGS__); \
+            asynctest::Fail(__FILE__, __LINE__, _message, ##__VA_ARGS__); \
         }                                                               \
     }
 

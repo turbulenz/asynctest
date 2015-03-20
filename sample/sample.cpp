@@ -6,38 +6,56 @@
 
 static std::function<void()>  s_async = nullptr;
 
-void Test1()
+class Test1 : public asynctest::ITest
 {
-    TEST_AreSame(1, 2, "this should fail");
-    assert(false /*, "should never reach here" */);
-}
+public:
+    void Test() override
+    {
+        TEST_AreSame(1, 2, "this should fail");
+        assert(false /*, "should never reach here" */);
+    }
+};
 TEST_REGISTER(Test1, "Test 1");
 
-void Test2()
+
+class Test2 : public asynctest::ITest
 {
-    TEST_AreSame(2, 2, "this should pass");
-}
+public:
+    void Test() override
+    {
+        TEST_AreSame(2, 2, "this should pass");
+    }
+};
 TEST_REGISTER(Test2, "Test 2");
 
-void TestASyncPass()
+class TestASyncPass : public asynctest::ITest
 {
-    s_async = []() {
-        asynctest::Test::Resume([]() {
-            });
-    };
-    asynctest::Test::Wait();
-}
+public:
+    void Test() override
+    {
+        s_async = []() {
+            asynctest::Resume([]() {
+                    TEST_AreSame(3, 3, "should pass (async callback)");
+                });
+        };
+        asynctest::Wait();
+    }
+};
 TEST_REGISTER(TestASyncPass, "ASync passing test");
 
-void TestASyncFail()
+class TestASyncFail : public asynctest::ITest
 {
-    s_async = []() {
-        asynctest::Test::Resume([]() {
-                TEST_AreSame(3, 2, "this should fail (async callback)");
-            });
-    };
-    asynctest::Test::Wait();
-}
+public:
+    void Test() override
+    {
+        s_async = []() {
+            asynctest::Resume([]() {
+                    TEST_AreSame(3, 2, "this should fail (async callback)");
+                });
+        };
+        asynctest::Wait();
+    }
+};
 TEST_REGISTER(TestASyncFail, "ASync failing test");
 
 // -----------------------------------------------------------------------------
@@ -46,7 +64,7 @@ int main(int argc, char **argv)
 {
     // Simulate our frame loop
 
-    while (!asynctest::Test::Tick())
+    while (!asynctest::Tick())
     {
         // printf("back from tick\n");
 
@@ -64,7 +82,7 @@ int main(int argc, char **argv)
 
     // Show results
 
-    const bool result = asynctest::Test::ShowResults();
+    const bool result = asynctest::ShowResults();
     printf("RESULT: %s\n", (result)?("passed"):("failed"));
     return (int )(!result);
 }

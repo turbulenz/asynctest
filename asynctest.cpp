@@ -10,18 +10,20 @@ namespace asynctest
 
 struct TestAndResult
 {
-    Test::EntryPoint         mTestFunction;
     std::string              mTestName;
+    ITest                 *(*mTestInitialize)();
+    ITest                   *mTestClass;
     int                      mWaiting;
     bool                     mFailed;
     std::string              mMessage;
 
-    TestAndResult();
+    TestAndResult(const char *name, ITest *(*initFn)());
 };
 
-TestAndResult::TestAndResult()
-    : mTestFunction(nullptr)
-    , mTestName()
+TestAndResult::TestAndResult(const char *name, ITest *(*initFn)())
+    : mTestName(name)
+    , mTestInitialize(initFn)
+    , mTestClass(nullptr)
     , mWaiting(0)
     , mFailed(false)
     , mMessage()
@@ -45,8 +47,37 @@ TestList &GetTestList()
     return *s_testList;
 }
 
-bool
-Test::Tick()
+// -----------------------------------------------------------------------------
+// ITest class
+// -----------------------------------------------------------------------------
+
+ITest::~ITest()
+{
+}
+
+void ITest::Startup()
+{
+}
+
+void ITest::Shutdown()
+{
+}
+
+void ITest::Wait()
+{
+    asynctest::Wait();
+}
+
+void ITest::Resume(const std::function<void()> &fn)
+{
+    asynctest::Resume(fn);
+}
+
+// -----------------------------------------------------------------------------
+// Public API
+// -----------------------------------------------------------------------------
+
+bool Tick()
 {
     TestList &tests = GetTestList();
 
@@ -61,12 +92,17 @@ Test::Tick()
         return false;
     }
 
+    assert(nullptr == current->mTestClass);
+    current->mTestClass = current->mTestInitialize();
+    assert(nullptr != current->mTestClass);
+
     assert(!s_haveJumpPoint);
     if (0 == setjmp(s_jumpPoint))
     {
         s_haveJumpPoint = true;
 
-        current->mTestFunction();
+        current->mTestClass->Startup();
+        current->mTestClass->Test();
     }
 
     assert(s_haveJumpPoint);
@@ -74,20 +110,22 @@ Test::Tick()
 
     if (0 == current->mWaiting)
     {
+        current->mTestClass->Shutdown();
+        delete current->mTestClass;
+        current->mTestClass = nullptr;
+
         ++s_currentIdx;
     }
 
     return false;
 }
 
-size_t
-Test::GetNumTestsRun()
+size_t GetNumTestsRun()
 {
     return s_currentIdx;
 }
 
-bool
-Test::ShowResults()
+bool ShowResults()
 {
     TestList &tests = GetTestList();
     size_t numFailures = 0;
@@ -115,15 +153,13 @@ Test::ShowResults()
     return true;
 }
 
-void
-Test::Wait()
+void Wait()
 {
     TestAndResult *current = &GetTestList()[s_currentIdx];
     ++(current->mWaiting);
 }
 
-void
-Test::Resume(const std::function<void()> &fn)
+void Resume(const std::function<void()> &fn)
 {
     TestAndResult *current = &GetTestList()[s_currentIdx];
     assert(0 < current->mWaiting);
@@ -141,17 +177,22 @@ Test::Resume(const std::function<void()> &fn)
         assert(s_haveJumpPoint);
         s_haveJumpPoint = false;
 
-        if (0 == current->mWaiting)
-        {
-            ++s_currentIdx;
-        }
     }
     assert(!s_haveJumpPoint);
+
+    if (0 == current->mWaiting)
+    {
+        current->mTestClass->Shutdown();
+        delete current->mTestClass;
+        current->mTestClass = nullptr;
+
+        ++s_currentIdx;
+    }
+
     return;
 }
 
-void
-Test::Fail(const char *file, int line, const char *message, ...)
+void Fail(const char *file, int line, const char *message, ...)
 {
     va_list va;
     va_start(va, message);
@@ -183,14 +224,10 @@ Test::Fail(const char *file, int line, const char *message, ...)
     longjmp(s_jumpPoint, 13);
 }
 
-bool
-Test::Register(EntryPoint fn, const char *name)
+bool Register(ITest *(*initFn)(), const char *name)
 {
     TestList &tests = GetTestList();
-    TestAndResult t;
-    t.mTestFunction = fn;
-    t.mTestName = name;
-    tests.push_back(t);
+    tests.push_back(TestAndResult(name, initFn));
     return true;
 }
 
