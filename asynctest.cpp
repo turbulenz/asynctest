@@ -12,17 +12,21 @@ namespace asynctest
 struct TestAndResult
 {
     std::string              mTestName;
+    std::string              mClassName;
     ITest                 *(*mTestInitialize)();
     ITest                   *mTestClass;
     int                      mWaiting;
     bool                     mFailed;
     std::string              mMessage;
 
-    TestAndResult(const char *name, ITest *(*initFn)());
+    TestAndResult(const char *name, const char *className, ITest *(*initFn)());
 };
 
-TestAndResult::TestAndResult(const char *name, ITest *(*initFn)())
+TestAndResult::TestAndResult(const char *name,
+                             const char *className,
+                             ITest *(*initFn)())
     : mTestName(name)
+    , mClassName(className)
     , mTestInitialize(initFn)
     , mTestClass(nullptr)
     , mWaiting(0)
@@ -32,12 +36,16 @@ TestAndResult::TestAndResult(const char *name, ITest *(*initFn)())
 }
 
 typedef std::vector<TestAndResult>  TestList;
+typedef std::vector<std::string>    TestClassNameList;
 
-static TestList  *s_testList = nullptr;
-static size_t     s_currentIdx = 0;
+static TestClassNameList *s_testClassNameList = nullptr;
+static TestList          *s_testList = nullptr;
+static size_t             s_currentIdx = 0;
 
-static bool       s_haveJumpPoint = false;
-static jmp_buf    s_jumpPoint;
+static bool               s_started = false;
+
+static bool               s_haveJumpPoint = false;
+static jmp_buf            s_jumpPoint;
 
 TestList &GetTestList()
 {
@@ -81,8 +89,71 @@ void ITest::Resume(const std::function<void()> &fn)
 bool Tick()
 {
     TestList &tests = GetTestList();
+    const size_t numTests = tests.size();
 
-    if (s_currentIdx >= tests.size())
+    // On the first call, do some sanity checking
+
+    if (!s_started)
+    {
+        s_started = true;
+        if (nullptr != s_testClassNameList)
+        {
+            TestClassNameList &testClassNames = *s_testClassNameList;
+            const size_t numClassNames = testClassNames.size();
+            if (numClassNames < numTests)
+            {
+                // Find ITest without corresponding class name.
+                // Missing REGISTER call.
+
+                for (size_t testI = 0 ; testI < numTests ; ++testI)
+                {
+                    const std::string &className = tests[testI].mClassName;
+                    bool found = false;
+                    for (size_t nIdx = 0 ; nIdx < numClassNames ; ++nIdx)
+                    {
+                        if (className == testClassNames[nIdx])
+                        {
+                            found = true;
+                            break;
+                        }
+                    }
+                    if (!found)
+                    {
+                        fprintf(stderr, "!! Missing call to TEST_REGISTER(%s)\n",
+                                className.c_str());
+                        assert(0);
+                    }
+                }
+            }
+            else if (numTests < numClassNames)
+            {
+                // Find class name with no corresponding ITest.
+                // Missing DECLARE.
+
+                for (size_t nIdx = 0 ; nIdx < numClassNames ; ++nIdx)
+                {
+                    bool found = false;
+                    const std::string &className = testClassNames[nIdx];
+                    for (size_t testI = 0 ; testI < numTests ; ++testI)
+                    {
+                        if (className == tests[testI].mClassName)
+                        {
+                            found = true;
+                            break;
+                        }
+                    }
+                    if (!found)
+                    {
+                        fprintf(stderr, "!! Missing call to TEST_DECLARE(%s)\n",
+                                className.c_str());
+                        assert(0);
+                    }
+                }
+            }
+        }
+    }
+
+    if (s_currentIdx >= numTests)
     {
         return true;
     }
@@ -225,11 +296,22 @@ void Fail(const char *file, int line, const char *message, ...)
     longjmp(s_jumpPoint, 13);
 }
 
-bool Register(ITest *(*initFn)(), const char *name)
+bool Register(ITest *(*initFn)(), const char *className, const char *name)
 {
     TestList &tests = GetTestList();
-    tests.push_back(TestAndResult(name, initFn));
+    tests.push_back(TestAndResult(name, className, initFn));
     return true;
 }
+
+bool RegisterClassName(const char *className)
+{
+    if (nullptr == s_testClassNameList)
+    {
+        s_testClassNameList = new TestClassNameList();
+    }
+    s_testClassNameList->push_back(className);
+    return true;
+}
+
 
 } // namespace asynctest

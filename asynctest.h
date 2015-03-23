@@ -41,7 +41,11 @@ void Resume(const std::function<void()> &fn = nullptr);
 
 /// Registers a test class.  In general, this should be called via the
 /// ASYNCTEST_REGISTER macro.
-bool Register(ITest *(*initFn)(), const char *name);
+bool Register(ITest *(*initFn)(), const char *className, const char *name);
+
+/// (Internal) used on unix platforms to check that all TEST_DECLAREs
+/// have a corresponding TEST_REGISTER.
+bool RegisterClassName(const char *className);
 
 /// Marks the current test as having failed.
 void Fail(const char *file, int line, const char *message, ...);
@@ -56,7 +60,7 @@ void Fail(const char *file, int line, const char *message, ...);
             ([]() -> asynctest::ITest * {                               \
                 return new _cls_();                                     \
             });                                                         \
-        asynctest::Register(initFn, _name_);                            \
+        asynctest::Register(initFn, #_cls, _name_);                     \
         return true;                                                    \
     }
 # define TEST_REGISTER( _cls_ )                 \
@@ -72,9 +76,14 @@ void Fail(const char *file, int line, const char *message, ...);
             ([]() -> asynctest::ITest * {                               \
                 return new _cls_ ();                                    \
             });                                                         \
-        asynctest::Register(initFn, _name_ );                           \
+        asynctest::Register(initFn, #_cls_ , _name_ );                  \
     }
-# define TEST_REGISTER( _cls_ )
+# define TEST_REGISTER( _cls_ )                                         \
+    __attribute__ ((constructor))                                       \
+    static void _checkreg_##_cls_()                                     \
+    {                                                                   \
+        asynctest::RegisterClassName( #_cls_ );                         \
+    }
 #endif
 
 #define TEST_AreSame( _expect, _actual, _message, ... )                 \
