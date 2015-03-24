@@ -52,7 +52,7 @@ void Fail(const char *file, int line, const char *message, ...);
 
 #if defined(_WIN32)
 # define TEST_DECLARE( _cls_, _name_ )                                  \
-    __declspec(dllexport) extern "C" bool _reg_##_cls_(void);           \
+    extern "C" bool _reg_##_cls_(void);                                 \
     extern "C" bool _reg_##_cls_(void)                                  \
     {                                                                   \
         typedef asynctest::ITest* (*InitFn_t)();                        \
@@ -60,7 +60,7 @@ void Fail(const char *file, int line, const char *message, ...);
             ([]() -> asynctest::ITest * {                               \
                 return new _cls_();                                     \
             });                                                         \
-        asynctest::Register(initFn, #_cls, _name_);                     \
+        asynctest::Register(initFn, #_cls_, _name_);                    \
         return true;                                                    \
     }
 # define TEST_REGISTER( _cls_ )                 \
