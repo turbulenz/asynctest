@@ -94,6 +94,14 @@ void Fail(const char *file, int line, const char *message, ...);
         }                                                               \
     }
 
+#define TEST_AreNotSame( _expect_not, _actual, _message, ... )          \
+    {                                                                   \
+        if ((_expect_not) == (_actual))                                 \
+        {                                                               \
+            asynctest::Fail(__FILE__, __LINE__, _message, ##__VA_ARGS__); \
+        }                                                               \
+    }
+
 #define TEST_AreEqual TEST_AreSame
 
 #define TEST_IsTrue( _cond, _message, ... )                             \
