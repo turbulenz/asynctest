@@ -121,7 +121,7 @@ bool Tick()
                     {
                         fprintf(stderr, "!! Missing call to TEST_REGISTER(%s)\n",
                                 className.c_str());
-                        assert(0);
+                        // assert(0);
                     }
                 }
             }
