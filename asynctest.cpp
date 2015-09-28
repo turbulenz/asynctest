@@ -207,13 +207,13 @@ bool ShowResults()
         if (t->mFailed)
         {
             ++numFailures;
-            printf("%20s : FAILED: %s\n",
+            printf("FAILED: %s: %s\n",
                    t->mTestName.c_str(),
                    t->mMessage.c_str());
         }
         else
         {
-            printf("%20s : PASSED\n", t->mTestName.c_str());
+            printf("PASSED: %s\n", t->mTestName.c_str());
         }
     }
     if (0 != numFailures)
@@ -312,6 +312,5 @@ bool RegisterClassName(const char *className)
     s_testClassNameList->push_back(className);
     return true;
 }
-
 
 } // namespace asynctest
