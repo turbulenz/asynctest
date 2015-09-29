@@ -6,8 +6,58 @@
 #include <stdarg.h>
 #include <vector>
 
+#if defined(_MSC_VER)
+# include <windows.h>
+#endif
+
 namespace asynctest
 {
+
+int Output(const char *msg, ...)
+{
+    va_list va;
+    va_start(va, msg);
+
+    int result;
+#if defined(_MSC_VER)
+    if (IsDebuggerPresent())
+    {
+        static char _buffer[256];
+        result = vsprintf(_buffer, msg, va);
+        OutputDebugStringA(_buffer);
+    }
+    else
+#endif
+    {
+        result = vprintf(msg, va);
+    }
+
+    va_end(va);
+    return result;
+}
+
+int OutputError(const char *msg, ...)
+{
+    va_list va;
+    va_start(va, msg);
+
+    int result;
+#if defined(_MSC_VER)
+    if (IsDebuggerPresent())
+    {
+        static char _buffer[256];
+        result = vsprintf(_buffer, msg, va);
+        OutputDebugStringA(_buffer);
+    }
+    else
+#endif
+    {
+        result = vfprintf(stderr, msg, va);
+    }
+
+    va_end(va);
+    return result;
+}
 
 struct TestAndResult
 {
@@ -119,8 +169,8 @@ bool Tick()
                     }
                     if (!found)
                     {
-                        fprintf(stderr, "!! Missing call to TEST_REGISTER(%s)\n",
-                                className.c_str());
+                        OutputError("!! Missing call to TEST_REGISTER(%s)\n",
+                                    className.c_str());
                         // assert(0);
                     }
                 }
@@ -144,8 +194,8 @@ bool Tick()
                     }
                     if (!found)
                     {
-                        fprintf(stderr, "!! Missing call to TEST_DECLARE(%s)\n",
-                                className.c_str());
+                        OutputError("!! Missing call to TEST_DECLARE(%s)\n",
+                                    className.c_str());
                         // assert(0);
                     }
                 }
@@ -207,18 +257,18 @@ bool ShowResults()
         if (t->mFailed)
         {
             ++numFailures;
-            printf("FAILED: %s: %s\n",
+            Output("FAILED: %s: %s\n",
                    t->mTestName.c_str(),
                    t->mMessage.c_str());
         }
         else
         {
-            printf("PASSED: %s\n", t->mTestName.c_str());
+            Output("PASSED: %s\n", t->mTestName.c_str());
         }
     }
     if (0 != numFailures)
     {
-        printf(" ******** %d Tests Failed ********\n", (int )numFailures);
+        Output(" ******** %d Tests Failed ********\n", (int )numFailures);
         return false;
     }
 
@@ -282,12 +332,12 @@ void Fail(const char *file, int line, const char *message, ...)
             vsnprintf(messageBuffer, sizeof(messageBuffer), message, va);
             current->mMessage = messageBuffer;
 
-            fprintf(stderr, "%s:%d: error: %s\n", file, line, messageBuffer);
+            OutputError("%s:%d: error: %s\n", file, line, messageBuffer);
         }
         else
         {
             current->mMessage = "";
-            fprintf(stderr, "%s:%d: error: (unnamed)\n", file, line);
+            OutputError("%s:%d: error: (unnamed)\n", file, line);
         }
     }
 
