@@ -50,6 +50,9 @@ bool RegisterClassName(const char *className);
 /// Marks the current test as having failed.
 void Fail(const char *file, int line, const char *message, ...);
 
+/// The same print function as used internally
+int Output(const char *msg, ...);
+
 #if 1 // defined(_WIN32)
 # define TEST_DECLARE( _cls_, _name_ )                                  \
     extern "C" bool _reg_##_cls_(void);                                 \
