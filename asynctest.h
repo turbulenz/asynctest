@@ -39,6 +39,9 @@ void Wait();
 /// Resume a test.  Must correspond to a previous call to Wait.
 void Resume(const std::function<void()> &fn = nullptr);
 
+/// Name of the currently running test
+const char *CurrentTestName();
+
 /// Registers a test class.  In general, this should be called via the
 /// ASYNCTEST_REGISTER macro.
 bool Register(ITest *(*initFn)(), const char *className, const char *name);

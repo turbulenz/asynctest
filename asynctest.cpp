@@ -314,6 +314,12 @@ void Resume(const std::function<void()> &fn)
     return;
 }
 
+const char *CurrentTestName()
+{
+    TestAndResult *current = &GetTestList()[s_currentIdx];
+    return current->mTestName.c_str();
+}
+
 void Fail(const char *file, int line, const char *message, ...)
 {
     va_list va;
