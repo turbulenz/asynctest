@@ -2,6 +2,12 @@
 #include <string>
 #include <functional>
 
+#if defined(_MSC_VER)
+# define AST_NORETURN
+#else
+# define AST_NORETURN __attribute__((__noreturn__))
+#endif
+
 namespace asynctest
 {
 
@@ -51,7 +57,7 @@ bool Register(ITest *(*initFn)(), const char *className, const char *name);
 bool RegisterClassName(const char *className);
 
 /// Marks the current test as having failed.
-void Fail(const char *file, int line, const char *message, ...);
+void Fail(const char *file, int line, const char *message, ...) AST_NORETURN;
 
 /// The same print function as used internally
 int Output(const char *msg, ...);
