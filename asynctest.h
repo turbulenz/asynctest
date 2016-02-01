@@ -1,5 +1,6 @@
 
 #include <string>
+#include <vector>
 #include <functional>
 
 #if defined(_MSC_VER)
@@ -26,6 +27,11 @@ public:
 };
 
 typedef void (*EntryPoint)();
+
+/// Optional call that can be made before startup to filter the test
+/// to be run.  Case-insensitive list of stings.  If a tests name
+/// contains ANY of the stings, it will be run.
+void SetFilter(const std::vector<std::string> &filter);
 
 /// Keep calling this per-frame.  When it returns true, all tests
 /// have been run.

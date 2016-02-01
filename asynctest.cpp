@@ -4,7 +4,8 @@
 #include <assert.h>
 #include <setjmp.h>
 #include <stdarg.h>
-#include <vector>
+#include <algorithm>
+#include <iterator>
 
 #if defined(_MSC_VER)
 # include <windows.h>
@@ -135,6 +136,37 @@ void ITest::Resume(const std::function<void()> &fn)
 // -----------------------------------------------------------------------------
 // Public API
 // -----------------------------------------------------------------------------
+
+void SetFilter(const std::vector<std::string> &filter)
+{
+#if 1
+    TestList &tests = GetTestList();
+
+    // Filter by class name
+
+    auto predicate = [&filter](const TestAndResult &test) {
+        std::string lower = test.mTestName;
+        std::transform(lower.begin(), lower.end(), lower.begin(), ::tolower);
+        std::string classlower = test.mClassName;
+        std::transform(classlower.begin(), classlower.end(), classlower.begin(),
+                       ::tolower);
+        for (const std::string &f : filter)
+        {
+            if (std::string::npos != lower.find(f) ||
+                std::string::npos != classlower.find(f))
+            {
+                return true;
+            }
+        }
+        return false;
+    };
+
+    TestList newList;
+    std::copy_if(tests.begin(), tests.end(), std::back_inserter(newList),
+                 predicate);
+    tests = newList;
+#endif
+}
 
 bool Tick()
 {
