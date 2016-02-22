@@ -133,6 +133,11 @@ void ITest::Resume(const std::function<void()> &fn)
     asynctest::Resume(fn);
 }
 
+bool ITest::IsWaiting() const
+{
+    return asynctest::IsWaiting();
+}
+
 // -----------------------------------------------------------------------------
 // Public API
 // -----------------------------------------------------------------------------
@@ -344,6 +349,12 @@ void Resume(const std::function<void()> &fn)
     }
 
     return;
+}
+
+bool IsWaiting()
+{
+    TestAndResult *current = &GetTestList()[s_currentIdx];
+    return (0 != current->mWaiting);
 }
 
 const char *CurrentTestName()

@@ -24,6 +24,7 @@ public:
 
     void Wait();
     void Resume(const std::function<void()> &fn = nullptr);
+    bool IsWaiting() const;
 };
 
 typedef void (*EntryPoint)();
@@ -50,6 +51,8 @@ void Wait();
 
 /// Resume a test.  Must correspond to a previous call to Wait.
 void Resume(const std::function<void()> &fn = nullptr);
+
+bool IsWaiting();
 
 /// Name of the currently running test
 const char *CurrentTestName();
