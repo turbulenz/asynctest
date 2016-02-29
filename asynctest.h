@@ -107,6 +107,11 @@ int Output(const char *msg, ...);
     }
 #endif
 
+#define TEST_Fail(_message, ... )                                       \
+    {                                                                   \
+        asynctest::Fail(__FILE__, __LINE__, _message, ##__VA_ARGS__);   \
+    }
+
 #define TEST_AreSame( _expect, _actual, _message, ... )                 \
     {                                                                   \
         if ((_expect) != (_actual))                                     \
