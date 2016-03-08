@@ -412,4 +412,29 @@ bool RegisterClassName(const char *className)
     return true;
 }
 
+class CleanUp
+{
+protected:
+    CleanUp()
+    {
+        fprintf(stderr, "CleanUp: HERE\n");
+    }
+    ~CleanUp()
+    {
+        fprintf(stderr, "CleanUp: Shutting down\n");
+        if (nullptr != s_testClassNameList)
+        {
+            delete s_testClassNameList;
+            s_testClassNameList = nullptr;
+        }
+        if (nullptr != s_testList)
+        {
+            delete s_testList;
+            s_testList = nullptr;
+        }
+    }
+    static CleanUp sInstance;
+};
+CleanUp CleanUp::sInstance;
+
 } // namespace asynctest
