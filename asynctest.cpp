@@ -417,11 +417,9 @@ class CleanUp
 protected:
     CleanUp()
     {
-        fprintf(stderr, "CleanUp: HERE\n");
     }
     ~CleanUp()
     {
-        fprintf(stderr, "CleanUp: Shutting down\n");
         if (nullptr != s_testClassNameList)
         {
             delete s_testClassNameList;
