@@ -138,4 +138,7 @@ int Output(const char *msg, ...);
         }                                                               \
     }
 
+#define TEST_IsFalse( _cond, _message, ... )                            \
+    TEST_IsTrue( !( _cond) , _message, ##__VA_ARGS__ )
+
 } // namespace asynctest
