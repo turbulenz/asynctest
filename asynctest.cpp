@@ -148,13 +148,12 @@ void SetFilter(const std::vector<std::string> &filter)
     TestList &tests = GetTestList();
 
     // Filter by class name
-
-    auto predicate = [&filter](const TestAndResult &test) {
+    auto localToLower = [](unsigned char c) { return (unsigned char)::tolower(c); };
+    auto predicate = [&filter, localToLower](const TestAndResult &test) {
         std::string lower = test.mTestName;
-        std::transform(lower.begin(), lower.end(), lower.begin(), ::tolower);
+        std::transform(lower.begin(), lower.end(), lower.begin(), localToLower);
         std::string classlower = test.mClassName;
-        std::transform(classlower.begin(), classlower.end(), classlower.begin(),
-                       ::tolower);
+        std::transform(classlower.begin(), classlower.end(), classlower.begin(), localToLower);
         for (const std::string &f : filter)
         {
             if (std::string::npos != lower.find(f) ||
